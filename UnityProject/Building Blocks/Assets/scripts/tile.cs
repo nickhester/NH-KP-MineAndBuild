@@ -59,6 +59,8 @@ public class tile : MonoBehaviour {
 		structureTypes.Add(tileType.structure_mill);
 		structureTypes.Add(tileType.structure_residence);
 		structureTypes.Add(tileType.structure_community);
+		structureTypes.Add(tileType.structure_sonar);
+		structureTypes.Add(tileType.structure_sonar_positive);
 
 		// specify which tile types are non-load bearing structural
 		structureTypesNonLoadBearing.Add(tileType.structure);
@@ -67,6 +69,8 @@ public class tile : MonoBehaviour {
 		structureTypesNonLoadBearing.Add(tileType.structure_mill);
 		structureTypesNonLoadBearing.Add(tileType.structure_residence);
 		structureTypesNonLoadBearing.Add(tileType.structure_community);
+		structureTypesNonLoadBearing.Add(tileType.structure_sonar);
+		structureTypesNonLoadBearing.Add(tileType.structure_sonar_positive);
 	}
 	
 	// Update is called once per frame

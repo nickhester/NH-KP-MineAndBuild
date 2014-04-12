@@ -434,6 +434,9 @@ public class resourceMgr : MonoBehaviour {
 		else if (_tile.thisTileType == tile.tileType.structure_gemMount)	// if this is a gem mount
 		{
 		}
+		else if (_tile.thisTileType == tile.tileType.structure_sonar || _tile.thisTileType == tile.tileType.structure_sonar_positive)	// if this is a sonar
+		{
+		}
 		else if (_tile.thisTileType == tile.tileType.dirt)					// if this is dirt
 		{
 			decisionPossibilities.Remove (decisionTextDestroy);
@@ -531,11 +534,11 @@ public class resourceMgr : MonoBehaviour {
 			if (_tile.thisTileY < lowestMinePosition)				// if this is the lowest mine position
 			{ lowestMinePosition = _tile.thisTileY; }					// set it as the new "lowestMinePosition"
 		}
-		for (int i = 0; i > lowestMinePosition; i--)										// for all other levels
+		for (int i = 0; i >= lowestMinePosition; i--)							// for all other levels
 		{
-			if (!minableTiles.ContainsKey(i))													// that aren't in the dictionary
+			if (!minableTiles.ContainsKey(i))										// that aren't in the dictionary
 			{
-				minableTiles[i] = false;															// create them in the dictionary and set them to false
+				minableTiles[i] = false;												// create them in the dictionary and set them to false
 			}
 		}
 	}
