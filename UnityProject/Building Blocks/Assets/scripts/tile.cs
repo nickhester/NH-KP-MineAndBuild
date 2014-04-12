@@ -85,7 +85,7 @@ public class tile : MonoBehaviour {
 
 	int[] GetTilePosition()
 	{
-		int[] result = { (int)transform.position.x, (int)transform.position.y };
+		int[] result = { Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.y)  };
 		return result;
 	}
 
