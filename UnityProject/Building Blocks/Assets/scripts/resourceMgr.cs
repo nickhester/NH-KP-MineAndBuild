@@ -12,12 +12,15 @@ public class resourceMgr : MonoBehaviour {
 
 	// costs
 	public int valueOfDirt = 1;
-	private int valueOfDirt_Adjusted;
+	[HideInInspector]
+	public int valueOfDirt_Adjusted;
 	public int costToMineRock = 10;
-	private int costToMineRock_Adjusted;
+	[HideInInspector]
+	public int costToMineRock_Adjusted;
 	public int costOfStructure = 2;
-	public int costOfStructure_fortified = 4;
-	public int costOfStructure_fortified_2 = 6;
+	public int costOfStructure_reenforced = 4;
+	public int costOfStructure_reenforced_2 = 6;
+	public int costOfStructure_unReenforce = -1;
 	public int costOfStructure_mining = 2;
 	public int costOfStructure_mill = 3;
 	public int costOfStructure_factory = 3;
@@ -33,8 +36,8 @@ public class resourceMgr : MonoBehaviour {
 	public int strengthOfDirt = 1;
 	public int strengthOfRock = 2;
 	public int strengthOfStructures = -2;
-	public int strengthOfStructures_fortified = 2;		// must be more than strength of rock (b/c you can replace rock with a fortified structure)
-	public int strengthOfStructures_fortified_2 = 6;
+	public int strengthOfStructures_reenforced = 2;
+	public int strengthOfStructures_reenforced_2 = 6;
 
 	// ground cover and exposure
 	public GameObject groundCover;
@@ -46,6 +49,7 @@ public class resourceMgr : MonoBehaviour {
 	// action descriptions
 	private string decisionTextReenforce;
 	private string decisionTextReenforce2;
+	private string decisionTextUnReenforce;
 	private string decisionTextDestroy;
 	private string decisionTextCancel;
 	private string decisionTextMining;
@@ -107,8 +111,9 @@ public class resourceMgr : MonoBehaviour {
 		RecalculateCosts();
 
 		// name all context options
-		decisionTextReenforce = "Re-enforce Structure\n\nThis structure will hold\nmore weight above it\n\ncost: " + costOfStructure_fortified;
-		decisionTextReenforce2 = "Further Re-enforce\n\nThis structure will hold\neven more weight\n\ncost: " + costOfStructure_fortified_2;
+		decisionTextReenforce = "Re-enforce Structure\n\nThis structure will hold\nmore weight above it\n\ncost: " + costOfStructure_reenforced;
+		decisionTextReenforce2 = "Further Re-enforce\n\nThis structure will hold\neven more weight\n\ncost: " + costOfStructure_reenforced_2;
+		decisionTextUnReenforce = "Un-re-enforce structure\n\nRemove all re-enforcement\nfrom this structure\ncost: " + costOfStructure_unReenforce;
 		decisionTextDestroy = "Destroy Structure\n\nRemove the structure\nregain some resource\n\ncost: " + costToDestroyStructure;
 		decisionTextCancel = "Do Nothing";
 		decisionTextMining = "Convert to Mining\n\nAllows deeper mining\n\ncost: " + costOfStructure_mining;
@@ -229,47 +234,90 @@ public class resourceMgr : MonoBehaviour {
 		groundCover.transform.position = Vector3.Lerp(groundCover.transform.position, _groundPos, 0.3f);
 	}
 
-	// recalculate all costs (based on number of factories and mills)
-	void RecalculateCosts()
+	// Show contextual options for clicked tile
+	void ContextOptions(tile _tile)
 	{
-		// Factories and rock
-		costToMineRock_Adjusted = costToMineRock - (PriceChangeOfRockPerFactory * countFactory);
-		if (costToMineRock_Adjusted < 1) { costToMineRock_Adjusted = 1; }
+		decisionPossibilities = new List<string>();
 
-		// Mills and dirt
-		valueOfDirt_Adjusted = valueOfDirt + (PriceChangeOfDirtPerMill * countMill);
-	}
+		// add options available for all (or most) structure types
+		decisionPossibilities.Add (decisionTextCancel);
+		decisionPossibilities.Add (decisionTextDestroy);
+		decisionPossibilities.Add (decisionTextRevert);
 
-	bool CheckWinningRequirements()
-	{
-		if (countGemMount >= numGems) { return true; }
-		else { return false; }
-	}
-
-	void RemoveBenefitsOfOldType(tile _tile)
-	{
-		if (tileToConvert.thisTileType == tile.tileType.structure_mining)
+		// add re-enforcement options for all structure types
+		if (_tile.levelOfReenforcement == 0)
 		{
-			countMining -= 1;
-			mineTiles.Remove(_tile);
-			UpdateMinableTilesList();
+			decisionPossibilities.Add (decisionTextReenforce);
 		}
-		else if (tileToConvert.thisTileType == tile.tileType.structure_factory) { countFactory -= 1; RecalculateCosts(); }
-		else if (tileToConvert.thisTileType == tile.tileType.structure_mill) { countMill -= 1; RecalculateCosts(); }
-		else if (tileToConvert.thisTileType == tile.tileType.structure_residence) { countResidence -= 1; }
-		else if (tileToConvert.thisTileType == tile.tileType.structure_community) { countCommunity -= 1; }
-		else if (tileToConvert.thisTileType == tile.tileType.structure_gemMount) { inventoryGems -= 1; }
-		else if (tileToConvert.thisTileType == tile.tileType.structure_sonar || tileToConvert.thisTileType == tile.tileType.structure_sonar_positive) { sonarList.Remove(_tile); }
+		else if (_tile.levelOfReenforcement == 1)
+		{
+			decisionPossibilities.Add (decisionTextUnReenforce);
+			decisionPossibilities.Add (decisionTextReenforce2);
+		}
+		else if (_tile.levelOfReenforcement == 2)
+		{
+			decisionPossibilities.Add (decisionTextUnReenforce);
+		}
+
+		// add options to specific structure types
+		if (_tile.thisTileType == tile.tileType.structure)					// if this is an empty structure
+		{
+			decisionPossibilities.Add (decisionTextResidence);					// to add Residence
+			decisionPossibilities.Add (decisionTextMining);						// to add Mining
+			if (inventoryGems > 0) { decisionPossibilities.Add (decisionTextMountGem); }			// to add a Gem Mount (if you have any gems)
+			decisionPossibilities.Remove (decisionTextRevert);					// remove "revert" for this one (since it wouldn't do anything)
+		}
+
+		else if (_tile.thisTileType == tile.tileType.structure_residence)	// if this is a residence
+		{
+			decisionPossibilities.Add (decisionTextCommunity);					// convert to community center
+		}
+		else if (_tile.thisTileType == tile.tileType.structure_mining)		// if this is a mining structure
+		{
+			decisionPossibilities.Add (decisionTextFactory);
+			decisionPossibilities.Add (decisionTextMill);
+		}
+		else if (_tile.thisTileType == tile.tileType.structure_mill)		// if this is a mill
+		{
+		}
+		else if (_tile.thisTileType == tile.tileType.structure_factory)		// if this is a factory
+		{
+			decisionPossibilities.Add(decisionTextSonar);
+		}
+		else if (_tile.thisTileType == tile.tileType.structure_community)	// if this is a community
+		{
+		}
+		else if (_tile.thisTileType == tile.tileType.structure_gemMount)	// if this is a gem mount
+		{
+		}
+		else if (_tile.thisTileType == tile.tileType.structure_sonar || _tile.thisTileType == tile.tileType.structure_sonar_positive)	// if this is a sonar
+		{
+		}
+		else if (_tile.thisTileType == tile.tileType.dirt)					// if this is dirt
+		{
+			decisionPossibilities.Remove (decisionTextDestroy);
+			decisionPossibilities.Remove (decisionTextRevert);
+		}
+		else if (_tile.thisTileType == tile.tileType.rock)					// if this is rock
+		{
+			decisionPossibilities.Remove (decisionTextDestroy);
+			decisionPossibilities.Remove (decisionTextRevert);
+		}
+		makingDecision = true;
+		isMenuOpen = true;
+		tileToConvert = _tile;
 	}
 
-	// Convert structure based on context options
+	// Convert structure based on context option chosen
 	void ContextOptionChoice(tile _tile, string choice)
 	{
 		if (choice == decisionTextCancel) { return; }				// If you chose cancel, then don't do anything
 		else
 		{
-			// check if action is possible
-			if (tileToConvert.thisTileType == tile.tileType.structure_residence)
+
+			// check if action is possible (unless you're just re-enforcing or un-re-enforcing)
+			if (choice == decisionTextReenforce || choice == decisionTextReenforce2 || choice == decisionTextUnReenforce) { }
+			else if (tileToConvert.thisTileType == tile.tileType.structure_residence)
 			{
 				if (!VerifyMeetPrereqs(0,0,0,-1,0) && choice != decisionTextCommunity) { CannotPerformAction("Cannot remove residence - there won't be enough for the workplaces\n(remove mines, or build another residence somewhere else)"); return; }
 			}
@@ -303,27 +351,35 @@ public class resourceMgr : MonoBehaviour {
 			}
 			else if (choice == decisionTextRevert)											// revert to empty
 			{
-				// if it's at the top, if it's non-load bearing, or if it is load bearing but not necessary (make sure it will still be structurally sufficient before reverting it)
-				if (_tile.myNeighborUp.thisTileType == tile.tileType.empty ||_tile.structureTypesNonLoadBearing.Contains(_tile.thisTileType) || FindBaseStrength(FindTileAtTop(_tile), _tile, strengthOfStructures) >= 0)
-				{
-					RemoveBenefitsOfOldType(_tile);
-					_tile.ChangeTileType (tile.tileType.structure);			// set to empty
-					inventoryDirt -= costToRemodel;											// pay resources
-				}
-				else { CannotPerformAction("Cannot remodel structure - structures rely on this block"); }
+				RemoveBenefitsOfOldType(_tile);
+				_tile.ChangeTileType (tile.tileType.structure);			// set to empty
+				inventoryDirt -= costToRemodel;											// pay resources
 			}
-			else if (choice == decisionTextReenforce && inventoryDirt - costOfStructure_fortified >= 0)					// change to re-enforce 1
+			else if (choice == decisionTextReenforce && inventoryDirt - costOfStructure_reenforced >= 0)					// re-enforce structure 1
 			{
-				if (_tile.myNeighborDown.thisTileType != tile.tileType.empty)			// make sure there's something below you (in the case of converting dirt to structure)
-				{
-					RemoveBenefitsOfOldType(_tile);
-					_tile.ChangeTileType (tile.tileType.structure_fortified);
-					inventoryDirt -= costOfStructure_fortified;
-				}
-				else { CannotPerformAction("Cannot re-enforce - structure must stand on ground or other structure"); }
+				_tile.prop_levelOfReenforcement++;
+				inventoryDirt -= costOfStructure_reenforced;
 			}
-			else if (choice == decisionTextReenforce2 && inventoryDirt - costOfStructure_fortified_2 >= 0)					// change to re-enforce 2
-			{ RemoveBenefitsOfOldType(_tile); _tile.ChangeTileType (tile.tileType.structure_fortified_2); inventoryDirt -= costOfStructure_fortified_2; }
+			else if (choice == decisionTextReenforce2 && inventoryDirt - costOfStructure_reenforced_2 >= 0)					// re-enforce structure 2
+			{
+				_tile.prop_levelOfReenforcement++;
+				inventoryDirt -= costOfStructure_reenforced_2;
+			}
+			else if (choice == decisionTextUnReenforce)					// un-re-enforce structure
+			{
+				// find the strength it will be set back to
+				int _tempStrength = 0;
+				if (tileToConvert.structureTypes.Contains(tileToConvert.thisTileType)) { _tempStrength = strengthOfStructures; }
+				else if (tileToConvert.thisTileType == tile.tileType.dirt) { _tempStrength = strengthOfDirt; }
+				else if (tileToConvert.thisTileType == tile.tileType.rock || tileToConvert.thisTileType == tile.tileType.rockWithGem) { _tempStrength = strengthOfRock; }
+
+				if (FindBaseStrength(FindTileAtTop(_tile), _tile, _tempStrength) >= 0)	// make sure the structure doesn't rely on it
+				{
+					_tile.prop_levelOfReenforcement = 0;
+					inventoryDirt += costOfStructure_unReenforce;
+				}
+				else { CannotPerformAction("Cannot un-reenforce structure - structures rely on this block's re-enforcement"); } 
+			}
 			else if (choice == decisionTextResidence && inventoryDirt - costOfStructure_residence >= 0)						// change to residence
 			{ RemoveBenefitsOfOldType(_tile); _tile.ChangeTileType (tile.tileType.structure_residence); inventoryDirt -= costOfStructure_residence; countResidence++; }
 			else if (choice == decisionTextMining && inventoryDirt - costOfStructure_mining >= 0)							// change to mining
@@ -370,6 +426,17 @@ public class resourceMgr : MonoBehaviour {
 		}
 	}
 
+	// recalculate all costs (based on number of factories and mills)
+	void RecalculateCosts()
+	{
+		// Factories and rock
+		costToMineRock_Adjusted = costToMineRock - (PriceChangeOfRockPerFactory * countFactory);
+		if (costToMineRock_Adjusted < 1) { costToMineRock_Adjusted = 1; }
+		
+		// Mills and dirt
+		valueOfDirt_Adjusted = valueOfDirt + (PriceChangeOfDirtPerMill * countMill);
+	}
+
 	// Update the sonar status if gems change
 	void UpdateAllSonar()
 	{
@@ -388,70 +455,27 @@ public class resourceMgr : MonoBehaviour {
 			else { _sonar.ChangeTileType (tile.tileType.structure_sonar); }
 		}
 	}
-
-	// Show contextual options for clicked tile
-	void ContextOptions(tile _tile)
+	
+	bool CheckWinningRequirements()
 	{
-		decisionPossibilities = new List<string>();
-		decisionPossibilities.Add (decisionTextCancel);
-		decisionPossibilities.Add (decisionTextDestroy);
-		decisionPossibilities.Add (decisionTextRevert);
-
-		if (_tile.thisTileType == tile.tileType.structure)					// if this is an empty structure
+		if (countGemMount >= numGems) { return true; }
+		else { return false; }
+	}
+	
+	void RemoveBenefitsOfOldType(tile _tile)
+	{
+		if (tileToConvert.thisTileType == tile.tileType.structure_mining)
 		{
-			decisionPossibilities.Add (decisionTextReenforce);
-			decisionPossibilities.Add (decisionTextResidence);					// to add Residence
-			decisionPossibilities.Add (decisionTextMining);						// to add Mining
-			if (inventoryGems > 0) { decisionPossibilities.Add (decisionTextMountGem); }			// to add a Gem Mount (if you have any gems)
-			decisionPossibilities.Remove (decisionTextRevert);					// remove "revert" for this one (since it wouldn't do anything)
+			countMining -= 1;
+			mineTiles.Remove(_tile);
+			UpdateMinableTilesList();
 		}
-		else if (_tile.thisTileType == tile.tileType.structure_fortified)	// if this is a fortified structure
-		{
-			decisionPossibilities.Add (decisionTextReenforce2);					// re-enforce 2
-		}
-		else if (_tile.thisTileType == tile.tileType.structure_fortified_2)	// if this is a fortified structure 2
-		{
-		}
-		else if (_tile.thisTileType == tile.tileType.structure_residence)	// if this is a residence
-		{
-			decisionPossibilities.Add (decisionTextCommunity);					// convert to community center
-		}
-		else if (_tile.thisTileType == tile.tileType.structure_mining)		// if this is a mining structure
-		{
-			decisionPossibilities.Add (decisionTextFactory);
-			decisionPossibilities.Add (decisionTextMill);
-		}
-		else if (_tile.thisTileType == tile.tileType.structure_mill)		// if this is a mill
-		{
-		}
-		else if (_tile.thisTileType == tile.tileType.structure_factory)		// if this is a factory
-		{
-			decisionPossibilities.Add(decisionTextSonar);
-		}
-		else if (_tile.thisTileType == tile.tileType.structure_community)	// if this is a community
-		{
-		}
-		else if (_tile.thisTileType == tile.tileType.structure_gemMount)	// if this is a gem mount
-		{
-		}
-		else if (_tile.thisTileType == tile.tileType.structure_sonar || _tile.thisTileType == tile.tileType.structure_sonar_positive)	// if this is a sonar
-		{
-		}
-		else if (_tile.thisTileType == tile.tileType.dirt)					// if this is dirt
-		{
-			decisionPossibilities.Remove (decisionTextDestroy);
-			decisionPossibilities.Remove (decisionTextRevert);
-			decisionPossibilities.Add (decisionTextReenforce);
-		}
-		else if (_tile.thisTileType == tile.tileType.rock)					// if this is rock
-		{
-			decisionPossibilities.Remove (decisionTextDestroy);
-			decisionPossibilities.Remove (decisionTextRevert);
-			decisionPossibilities.Add (decisionTextReenforce);
-		}
-		makingDecision = true;
-		isMenuOpen = true;
-		tileToConvert = _tile;
+		else if (tileToConvert.thisTileType == tile.tileType.structure_factory) { countFactory -= 1; RecalculateCosts(); }
+		else if (tileToConvert.thisTileType == tile.tileType.structure_mill) { countMill -= 1; RecalculateCosts(); }
+		else if (tileToConvert.thisTileType == tile.tileType.structure_residence) { countResidence -= 1; }
+		else if (tileToConvert.thisTileType == tile.tileType.structure_community) { countCommunity -= 1; }
+		else if (tileToConvert.thisTileType == tile.tileType.structure_gemMount) { inventoryGems -= 1; }
+		else if (tileToConvert.thisTileType == tile.tileType.structure_sonar || tileToConvert.thisTileType == tile.tileType.structure_sonar_positive) { sonarList.Remove(_tile); }
 	}
 
 	// look above and find the top of the current stack of blocks (the first non-empty block)
@@ -486,20 +510,24 @@ public class resourceMgr : MonoBehaviour {
 			{
 				_result += strengthOfStructures;
 			}
-			else if (_tileInQuestion.thisTileType == tile.tileType.structure_fortified)			// If it's a fortified structure, add that strength
-			{
-				_result += strengthOfStructures_fortified;
-			}
-			else if (_tileInQuestion.thisTileType == tile.tileType.structure_fortified_2)		// If it's a double fortified structure, add that strength
-			{
-				_result += strengthOfStructures_fortified_2;
-			}
-			else if (_tileInQuestion.thisTileType == tile.tileType.bedrock)						// If you hit "bedrock", then you're good for sure, just return "1"
+			else if (_tileInQuestion.thisTileType == tile.tileType.bedrock)						// If you hit "bedrock", then you're good for sure, just return positive
 			{
 				return 9999;
 			}
 
-			if (_tileInQuestion.myNeighborDown != null)											// As long as there's a block below, move on to the next one to repeat the loop
+			if (_tileInQuestion == _tileToRemove)		// if this is the structure being removed/replaced, don't add in its re-enforcement
+			{
+			}
+			else if (_tileInQuestion.levelOfReenforcement == 1 )			// if the structure is re-enforced, add that strength in
+			{
+				_result += strengthOfStructures_reenforced;
+			}
+			else if (_tileInQuestion.levelOfReenforcement == 2)		// if the structure is double re-enforced, add that strength in
+			{
+				_result += strengthOfStructures_reenforced_2;
+			}
+
+			if (_tileInQuestion.myNeighborDown != null)						// As long as there's a block below, move on to the next one to repeat the loop
 			{
 				_tileInQuestion = _tileInQuestion.myNeighborDown;
 			}

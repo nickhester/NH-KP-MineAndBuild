@@ -33,8 +33,8 @@ public class winningScreen : MonoBehaviour {
 			        "number of mines: " + resourceManager.countMining + "\n" + 
 			        "number of mills: " + resourceManager.countMill + "\n" + 
 			        "number of factories: " + resourceManager.countFactory + "\n" + 
-			        "ending value of dirt: " + resourceManager.valueOfDirt + "\n" + 
-			        "ending cost to mine rock: " + resourceManager.costToMineRock + "\n", winScreenStyle);
+			        "ending value of dirt: " + resourceManager.valueOfDirt_Adjusted + "\n" + 
+			        "ending cost to mine rock: " + resourceManager.costToMineRock_Adjusted + "\n", winScreenStyle);
 		}
 	}
 }

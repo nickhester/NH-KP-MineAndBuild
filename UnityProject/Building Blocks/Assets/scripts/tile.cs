@@ -12,8 +12,8 @@ public class tile : MonoBehaviour {
 		empty,
 		none,
 		structure,
-		structure_fortified,
-		structure_fortified_2,
+		structure_reenforced,
+		structure_reenforced_2,
 		structure_mining,
 		structure_factory,
 		structure_mill,
@@ -41,6 +41,36 @@ public class tile : MonoBehaviour {
 	public tile myNeighborLeft;
 	public tile myNeighborRight;
 
+	public GameObject tile_mask;
+	private GameObject myMask;
+	public int levelOfReenforcement = 0;
+
+	public int prop_levelOfReenforcement
+	{
+		get
+		{
+			return levelOfReenforcement;
+		}
+		set
+		{
+			if (value == 0)
+			{
+				Destroy(myMask);
+			}
+			else if (value == 1)
+			{
+				myMask = Instantiate(tile_mask, this.transform.position, Quaternion.identity) as GameObject;
+				myMask.transform.parent = this.gameObject.transform;
+				myMask.renderer.material = myMask.GetComponent<tileMask>().allMaterials[0];
+			}
+			else if (value == 2)
+			{
+				myMask.renderer.material = myMask.GetComponent<tileMask>().allMaterials[1];
+			}
+			levelOfReenforcement = value;
+		}
+	}
+
 	public bool updateOnDrawGizmos = true;
 
 	// Use this for initialization
@@ -52,8 +82,8 @@ public class tile : MonoBehaviour {
 
 		// specify which tile types are structural
 		structureTypes.Add(tileType.structure);
-		structureTypes.Add(tileType.structure_fortified);
-		structureTypes.Add(tileType.structure_fortified_2);
+		structureTypes.Add(tileType.structure_reenforced);
+		structureTypes.Add(tileType.structure_reenforced_2);
 		structureTypes.Add(tileType.structure_mining);
 		structureTypes.Add(tileType.structure_factory);
 		structureTypes.Add(tileType.structure_mill);
@@ -117,15 +147,15 @@ public class tile : MonoBehaviour {
 			renderer.material = allMaterials[4];
 			name = "structure";
 		}
-		else if (thisTileType == tileType.structure_fortified)
+		else if (thisTileType == tileType.structure_reenforced)
 		{
 			renderer.material = allMaterials[5];
-			name = "structure_fortified";
+			name = "structure_reenforced";
 		}
-		else if (thisTileType == tileType.structure_fortified_2)
+		else if (thisTileType == tileType.structure_reenforced_2)
 		{
 			renderer.material = allMaterials[6];
-			name = "structure_fortified_2";
+			name = "structure_reenforced_2";
 		}
 		else if (thisTileType == tileType.structure_mining)
 		{
@@ -180,5 +210,10 @@ public class tile : MonoBehaviour {
 	{
 		thisTileType = newType;
 		UpdateMat();
+
+		if (myMask != null && newType == tileType.empty)
+		{
+			prop_levelOfReenforcement = 0;
+		}
 	}
 }
