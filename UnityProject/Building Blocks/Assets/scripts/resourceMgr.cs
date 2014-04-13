@@ -373,7 +373,8 @@ public class resourceMgr : MonoBehaviour {
 				else if (tileToConvert.thisTileType == tile.tileType.dirt) { _tempStrength = strengthOfDirt; }
 				else if (tileToConvert.thisTileType == tile.tileType.rock || tileToConvert.thisTileType == tile.tileType.rockWithGem) { _tempStrength = strengthOfRock; }
 
-				if (FindBaseStrength(FindTileAtTop(_tile), _tile, _tempStrength) >= 0)	// make sure the structure doesn't rely on it
+				if (FindBaseStrength(FindTileAtTop(_tile), _tile, _tempStrength) >= 0			// make sure the structure doesn't rely on it
+				         || tileToConvert.myNeighborUp.thisTileType == tile.tileType.empty)		// or if it's the top structure
 				{
 					_tile.prop_levelOfReenforcement = 0;
 					inventoryDirt += costOfStructure_unReenforce;
@@ -608,7 +609,6 @@ public class resourceMgr : MonoBehaviour {
 	{
 		isDisplayingMessage = true;
 		messageToDisplay = errorMessage;
-		print (errorMessage);
 		CancelInvoke("TurnOffMessage");
 		Invoke("TurnOffMessage", 10);
 	}
