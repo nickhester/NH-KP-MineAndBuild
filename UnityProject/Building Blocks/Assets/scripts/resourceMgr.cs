@@ -89,6 +89,7 @@ public class resourceMgr : MonoBehaviour {
 	private List<string> decisionPossibilities;
 	private bool isDisplayingMessage = false;
 	private string messageToDisplay;
+	public int contextButtonsPerRow = 3;
 
 	// HUDs and menus
 	public GUIStyle status_HUD;
@@ -635,14 +636,27 @@ public class resourceMgr : MonoBehaviour {
 		// Context Buttons
 		if (makingDecision)
 		{
+			int buttonPos;
+			int positionOnRow;
+			int numRows = (decisionPossibilities.Count / contextButtonsPerRow);			// find number of rows needed
+			if (decisionPossibilities.Count % contextButtonsPerRow > 0) { numRows++; }	// add a row for the remainder if there's one
+
 			for (int i = 0; i < decisionPossibilities.Count; i++) {
-				int buttonPos;
+				int currentRow = i / contextButtonsPerRow;					// which row will the current button be on
+
 				if (decisionPossibilities.Count == 1) { buttonPos = Screen.width/2; }
-				else { buttonPos = (int)((((Screen.width)/(decisionPossibilities.Count - 1) * i) - Screen.width/2)		// space out buttons, determine button order
-				        * (Mathf.Abs(1.0f / decisionPossibilities.Count) - 1))							// determine spacing based on number of options
-						+ Screen.width/2; }
+				else
+				{
+					positionOnRow = i % contextButtonsPerRow;
+
+					buttonPos = (int)((((Screen.width)/(contextButtonsPerRow - 1) * positionOnRow) - Screen.width/2)		// space out buttons, determine button order
+					* (1.0f / contextButtonsPerRow - 1))							// determine spacing based on number of options
+						+ Screen.width/2;
+				}
+
 				int buttonWidth = 150;
-				if (GUI.Button(new Rect(buttonPos - (buttonWidth/2), 100, buttonWidth, 120), decisionPossibilities[i]))
+
+				if (GUI.Button(new Rect(buttonPos - (buttonWidth/2), (currentRow * 140) + 100, buttonWidth, 120), decisionPossibilities[i]))
 				{
 					ContextOptionChoice(tileToConvert, decisionPossibilities[i]);
 					makingDecision = false;
