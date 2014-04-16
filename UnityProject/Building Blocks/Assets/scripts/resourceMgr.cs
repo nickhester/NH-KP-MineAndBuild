@@ -328,7 +328,7 @@ public class resourceMgr : MonoBehaviour {
 			}
 			else if (choice == decisionTextMining)
 			{
-				if (!VerifyMeetPrereqs(1,0,0,0,0)) { CannotPerformAction("Cannot build mine - not enough residences\n(there must be 1 residence per mine)"); return; }
+				if (!VerifyMeetPrereqs(1,0,0,0,0)) { CannotPerformAction("Cannot build mine - not enough residences\n(1 residence sustains " + MinesPerResidence + " mine(s).)"); return; }
 			}
 			else if (choice == decisionTextResidence)
 			{
@@ -576,7 +576,7 @@ public class resourceMgr : MonoBehaviour {
 	// Verify that all prereqs for building types if anything is changed
 	bool VerifyMeetPrereqs(int _changeMining, int _changeFactory, int _changeMill, int _changeResidence, int _changeCommunity)
 	{
-		if ((countResidence + _changeResidence + countCommunity + _changeCommunity) < (countMining + _changeMining + countFactory + _changeFactory + countMill + _changeMill)) { return false; }		// there aren't enough residences per workplaces if you remove one
+		if (!VerifyMeetPrereqs(1,0,0,0,0)) { CannotPerformAction("Cannot build mine - not enough residences\n(1 residence sustains " + MinesPerResidence + " mine(s).)"); return; }
 		if ((countResidence + _changeResidence) / ResidencesPerCommunity > countCommunity + _changeCommunity) { return false; }			// there aren't enough communities to build another residence
 		return true;
 	}
