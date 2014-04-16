@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -304,6 +304,14 @@ public class resourceMgr : MonoBehaviour {
 			decisionPossibilities.Remove (decisionTextDestroy);
 			decisionPossibilities.Remove (decisionTextRevert);
 		}
+
+		// Re-arrange options (make sure cancel is last, at least)
+		if (decisionPossibilities.Contains(decisionTextCancel))
+		{
+			decisionPossibilities.Remove(decisionTextCancel);
+			decisionPossibilities.Add(decisionTextCancel);
+		}
+
 		makingDecision = true;
 		isMenuOpen = true;
 		tileToConvert = _tile;
@@ -576,7 +584,7 @@ public class resourceMgr : MonoBehaviour {
 	// Verify that all prereqs for building types if anything is changed
 	bool VerifyMeetPrereqs(int _changeMining, int _changeFactory, int _changeMill, int _changeResidence, int _changeCommunity)
 	{
-		if (!VerifyMeetPrereqs(1,0,0,0,0)) { CannotPerformAction("Cannot build mine - not enough residences\n(1 residence sustains " + MinesPerResidence + " mine(s).)"); return; }
+		if (((countResidence + _changeResidence + countCommunity + _changeCommunity) * MinesPerResidence) < (countMining + _changeMining + countFactory + _changeFactory + countMill + _changeMill)) { return false; }		// there aren't enough residences per workplaces if you remove one
 		if ((countResidence + _changeResidence) / ResidencesPerCommunity > countCommunity + _changeCommunity) { return false; }			// there aren't enough communities to build another residence
 		return true;
 	}
@@ -638,13 +646,17 @@ public class resourceMgr : MonoBehaviour {
 		{
 			int buttonPos;
 			int positionOnRow;
-			int numRows = (decisionPossibilities.Count / contextButtonsPerRow);			// find number of rows needed
-			if (decisionPossibilities.Count % contextButtonsPerRow > 0) { numRows++; }	// add a row for the remainder if there's one
+
+			int numDecisionsWithoutCancel = decisionPossibilities.Count - 1;
+			int numRows = (numDecisionsWithoutCancel / contextButtonsPerRow);			// find number of rows needed
+			if (numDecisionsWithoutCancel % contextButtonsPerRow > 0) { numRows++; }	// add a row for the remainder if there's one
 
 			for (int i = 0; i < decisionPossibilities.Count; i++) {
 				int currentRow = i / contextButtonsPerRow;					// which row will the current button be on
+				int rowSpacing = 140;
+				int buttonWidth = 150;
 
-				if (decisionPossibilities.Count == 1) { buttonPos = Screen.width/2; }
+				if (numDecisionsWithoutCancel == 1) { buttonPos = Screen.width/2; }
 				else
 				{
 					positionOnRow = i % contextButtonsPerRow;
@@ -654,9 +666,14 @@ public class resourceMgr : MonoBehaviour {
 						+ Screen.width/2;
 				}
 
-				int buttonWidth = 150;
+				if (i == numDecisionsWithoutCancel)
+				{
+					buttonPos = Screen.width / 2;
+					currentRow = numDecisionsWithoutCancel / contextButtonsPerRow + 1;
+				}
 
-				if (GUI.Button(new Rect(buttonPos - (buttonWidth/2), (currentRow * 140) + 100, buttonWidth, 120), decisionPossibilities[i]))
+
+				if (GUI.Button(new Rect(buttonPos - (buttonWidth/2), (currentRow * rowSpacing) + 100, buttonWidth, 120), decisionPossibilities[i]))
 				{
 					ContextOptionChoice(tileToConvert, decisionPossibilities[i]);
 					makingDecision = false;
