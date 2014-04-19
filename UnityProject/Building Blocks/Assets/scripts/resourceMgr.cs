@@ -31,6 +31,7 @@ public class resourceMgr : MonoBehaviour {
 	private int costToRemodel;					// This gets set to the costOfStructure + costToDestroyStructure in Start()
 	public int PriceChangeOfRockPerFactory = 2;
 	public int PriceChangeOfDirtPerMill = 1;
+	public int prizeDirtForMountingGem = 30;
 
 	// tile strengths
 	public int strengthOfDirt = 1;
@@ -106,6 +107,7 @@ public class resourceMgr : MonoBehaviour {
 			if (t.thisTileType == tile.tileType.rockWithGem)	// find all gems in tiles
 			{ gemsInGround.Add(t); }								// and add them to the gem list
 		}
+		numGems = gemsInGround.Count; // set the number of gems (for winning requirement) based on how many gems found in ground
 
 		groundCoverStartingPos = groundCover.transform.position;
 		costToRemodel = costOfStructure + costToDestroyStructure;
@@ -409,9 +411,11 @@ public class resourceMgr : MonoBehaviour {
 			{ RemoveBenefitsOfOldType(_tile); _tile.ChangeTileType (tile.tileType.structure_community); inventoryDirt -= costOfStructure_community; countCommunity++; }
 			else if (choice == decisionTextSonar && inventoryDirt - costOfStructure_sonar >= 0)								// change to sonar
 			{
+				RemoveBenefitsOfOldType(_tile);
 				inventoryDirt -= costOfStructure_sonar;
 				sonarList.Add(_tile);														// Add to sonar list
 				UpdateAllSonar();
+				RecalculateCosts();
 			}
 			else if (choice == decisionTextMountGem)																		// change to gem mount
 			{
@@ -425,6 +429,7 @@ public class resourceMgr : MonoBehaviour {
 							_tile.ChangeTileType (tile.tileType.structure_gemMount);
 							inventoryGems--;
 							countGemMount++;
+							inventoryDirt += prizeDirtForMountingGem;
 						}
 						else { CannotPerformAction("Cannot mount Gem here - Gem must be mounted at least " + gemHeightRequirement + " above ground level"); }
 					}

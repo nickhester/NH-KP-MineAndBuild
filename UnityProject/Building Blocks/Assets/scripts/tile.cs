@@ -42,7 +42,7 @@ public class tile : MonoBehaviour {
 	public tile myNeighborRight;
 
 	public GameObject tile_mask;
-	private GameObject myMask;
+	private GameObject myMask_reenforcement;
 	public int levelOfReenforcement = 0;
 
 	public int prop_levelOfReenforcement
@@ -55,26 +55,65 @@ public class tile : MonoBehaviour {
 		{
 			if (value == 0)
 			{
-				Destroy(myMask);
+				Destroy(myMask_reenforcement);
 			}
 			else if (value == 1)
 			{
-				myMask = Instantiate(tile_mask, this.transform.position, Quaternion.identity) as GameObject;
-				myMask.transform.parent = this.gameObject.transform;
-				myMask.renderer.material = myMask.GetComponent<tileMask>().allMaterials[0];
+				myMask_reenforcement = InstantiateMask(tile_mask);
+				myMask_reenforcement.transform.parent = this.gameObject.transform;
+				myMask_reenforcement.renderer.material = myMask_reenforcement.GetComponent<tileMask>().allMaterials[0];
 			}
 			else if (value == 2)
 			{
-				myMask.renderer.material = myMask.GetComponent<tileMask>().allMaterials[1];
+				myMask_reenforcement.renderer.material = myMask_reenforcement.GetComponent<tileMask>().allMaterials[1];
 			}
 			levelOfReenforcement = value;
 		}
 	}
 
+	private GameObject myMask_FogOfWar;
+	private bool isFogOfWarOn;
+	public bool prop_isFogOfWarOn
+	{
+		get
+		{
+			return isFogOfWarOn;
+		}
+		set
+		{
+			if (value == true)
+			{
+				myMask_FogOfWar = InstantiateMask(tile_mask);
+				myMask_FogOfWar.transform.parent = this.gameObject.transform;
+				myMask_FogOfWar.renderer.material = myMask_FogOfWar.GetComponent<tileMask>().allMaterials[0];
+				isFogOfWarOn = true;
+			}
+			else
+			{
+				Destroy(myMask_FogOfWar);
+				isFogOfWarOn = false;
+			}
+		}
+	}
+
 	public bool updateOnDrawGizmos = true;
+
+	GameObject InstantiateMask(GameObject _maskObject)
+	{
+		return Instantiate(_maskObject, new Vector3(
+			gameObject.transform.position.x, 
+			gameObject.transform.position.y, 
+			gameObject.transform.position.z - 0.1f), Quaternion.identity) as GameObject;
+	}
 
 	// Use this for initialization
 	void Start () {
+		// randomly convert stones to gems // this is a temporary implementation of "random" level generation
+		if (thisTileType == tileType.rock & Random.Range(0, 35) == 0)
+		{
+			thisTileType = tileType.rockWithGem;
+		}
+
 		UpdateMat();
 		int[] thisTileXandY = GetTilePosition();
 		thisTileX = thisTileXandY[0];
@@ -211,7 +250,7 @@ public class tile : MonoBehaviour {
 		thisTileType = newType;
 		UpdateMat();
 
-		if (myMask != null && newType == tileType.empty)
+		if (myMask_reenforcement != null && newType == tileType.empty)
 		{
 			prop_levelOfReenforcement = 0;
 		}
